@@ -87,5 +87,5 @@ source_group(TREE "${PROJECT_SOURCE_DIR}" PREFIX "Sources" FILES ${SRCS})
 
 add_executable(${CMAKE_PROJECT_NAME} ${INCS} ${SRCS})
 
-set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY CXX_STANDARD 98)
+set_property(TARGET ${CMAKE_PROJECT_NAME} PROPERTY C_STANDARD 99)
 add_compile_definitions(__STDC_LIMIT_MACROS)
