@@ -92,8 +92,10 @@ int main() {
 				// Any duplicates?
 				if (found < MAX_ENTRIES) {
 					if (strcmp(ext, extension[n]) == 0) {
+					#ifndef NDEBUG
 						// Ignore real duplicate strings (probably ES)
 						printf("Ignoring duplicate '%s' (%d and %d)\n", ext, n, found);
+					#endif
 					} else {
 						printf("Collision for '%s' at %d (with '%s' at %d)\n", ext, n, extension[n], found);
 						return EXIT_FAILURE;
