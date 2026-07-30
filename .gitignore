@@ -1,0 +1,13 @@
+.DS_Store
+a.out
+*.obj
+*.exe
+*.html
+*.js
+*.wasm
+
+.idea
+.vs/
+cmake*/
+build/
+out/
