@@ -7,7 +7,8 @@
 /**
  * \def MAX_ENTRIES
  * Maximum possible number of extensions (some sensible bound; as of mid-2026
- * Khronos has 1110). Increase if \c extension errors when compiling.
+ * Khronos has 1110, with approximately 60 others). Increase if \c extension
+ * errors with \e excess \e elements when compiling.
  */
 #define MAX_ENTRIES 1200
 
@@ -20,9 +21,10 @@ typedef uint32_t HashLookup[MAX_ENTRIES];
  * All the Khronos extensions (with a \c NULL as the last used entry).
  */
 static const char* extension[MAX_ENTRIES] = {
-	#include "gl.inl"  // GL extensions
-	#include "arb.inl" // ARB extensions
-	#include "es.inl"  // GL ES extensions
+	#include "gl.inl"   // GL extensions
+	#include "arb.inl"  // ARB extensions
+	#include "es.inl"   // GL ES extensions
+	#include "misc.inl" // Anything else
 	NULL
 };
 
