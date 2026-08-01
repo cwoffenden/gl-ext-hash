@@ -7,10 +7,10 @@
 /**
  * \def MAX_ENTRIES
  * Maximum possible number of extensions (some sensible bound; as of mid-2026
- * Khronos has 1110, with approximately 60 others). Increase if \c extension
+ * Khronos has 1110, with approximately 95 others). Increase if \c extension
  * errors with \e excess \e elements when compiling.
  */
-#define MAX_ENTRIES 1200
+#define MAX_ENTRIES 1250
 
 /**
  * Container type for calculated hashes.

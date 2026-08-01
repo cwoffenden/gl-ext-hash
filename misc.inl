@@ -1,5 +1,5 @@
 /*
- * Miscellaneous extensions, known of but not in the Khronos registry.
+ * Miscellaneous extensions, seen in the wild.
  */
 "GL_ATI_texture_compression_3dc",
 "GL_OES_compressed_ETC2_RGB8_texture",
@@ -9,10 +9,61 @@
 "GL_OES_compressed_EAC_R11_unsigned_texture",
 "GL_OES_compressed_EAC_RG11_unsigned_texture",
 "GL_ANGLE_lossy_etc_decode",
+/*
+ * Khronos ratified.
+ */
 "WEBGL_compressed_texture_s3tc",
-"WEBGL_compressed_texture_pvrtc",
-"WEBGL_compressed_texture_etc1",
+"WEBGL_debug_renderer_info",
+"WEBGL_debug_shaders",
+"WEBGL_depth_texture",
+"WEBGL_draw_buffers",
+"WEBGL_lose_context",
+/*
+ * Khronos community approved.
+ */
+"WEBGL_blend_func_extended",
+"WEBGL_clip_cull_distance",
+"WEBGL_color_buffer_float",
 "WEBGL_compressed_texture_astc",
+"WEBGL_compressed_texture_etc",
+"WEBGL_compressed_texture_etc1",
+"WEBGL_compressed_texture_pvrtc",
+"WEBGL_compressed_texture_s3tc_srgb",
+"WEBGL_multi_draw",
+"WEBGL_polygon_mode",
+"WEBGL_provoking_vertex",
+"WEBGL_render_shared_exponent",
+"WEBGL_stencil_texturing",
+/*
+ * Khronos draft.
+ */
+"WEBGL_blend_equation_advanced_coherent",
+"WEBGL_draw_instanced_base_vertex_base_instance",
+"WEBGL_multi_draw_instanced_base_vertex_base_instance",
+"WEBGL_shader_pixel_local_storage",
+/*
+ * Khonos proposed.
+ */
+"GL_EXT_texture_norm16_dom_source",
+"WEBGL_debug",
+"WEBGL_dynamic_texture",
+"WEBGL_video_texture",
+"WEBGL_webcodecs_video_frame",
+/*
+ * Khronos rejected.
+ */
+"WEBGL_compress_texture",
+"WEBGL_compressed_texture_atc",
+"WEBGL_debug_shader_precision",
+"WEBGL_draw_elements_no_range_check",
+"WEBGL_get_buffer_sub_data_async",
+"WEBGL_security_sensitive_resources",
+"WEBGL_shared_resources",
+"WEBGL_subarray_uploads",
+"WEBGL_subscribe_uniform",
+"WEBGL_texture_from_depth_video",
+"WEBGL_texture_multisample",
+"WEBGL_texture_source_iframe",
 /*
  * From the ANGLE source: requestable.
  */
