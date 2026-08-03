@@ -75,8 +75,12 @@ static uint32_t hash32(const char* str, size_t const len) {
 
 /**
  * Standalone test of the embedded Khronos extension strings.
+ *
+ * \note In testing this needs at least 19 bits with the 1200 or so extensions
+ * to not have clashes between prefixed and unprefixed versions (approx. 2160).
  */
 int main() {
+	unsigned unprefed = 0;
 	for (unsigned n = 0; n < MAX_ENTRIES; n++) {
 		const char* ext = extension[n];
 		if (ext != NULL) {
@@ -105,6 +109,7 @@ int main() {
 				} else {
 					// Try the same but removing the GL_ prefix (but not others)
 					if (len > 3 && strncmp(ext, "GL_", 3) == 0) {
+						unprefed++;
 						hash = hash32(ext + 3, len - 3);
 						found = find(hash);
 						unpref[n] = hash;
@@ -119,7 +124,9 @@ int main() {
 				return EXIT_FAILURE;
 			}
 		} else {
-			printf("No collisions found (%d extensions tested)\n", n + 1);
+			printf("No collisions found!\n%d extensions tested, "
+				"%d unprefixed, a total of %d strings.\n",
+					n + 1, unprefed, n + 1 + unprefed);
 			break;
 		}
 	}

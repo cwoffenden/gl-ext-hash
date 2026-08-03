@@ -10,62 +10,66 @@
 "GL_OES_compressed_EAC_RG11_unsigned_texture",
 "GL_ANGLE_lossy_etc_decode",
 /*
- * Khronos ratified.
+ * WebGL extensions, Khronos ratified, 2026-08-01.
+ * https://registry.khronos.org/webgl/extensions/
+ *
+ * Note: these have been GL prefixed, with the reasoning that WEBGL is the same
+ * as EXT, ARB, etc., justified by its use as a postfix in parameter names.
  */
-"WEBGL_compressed_texture_s3tc",
-"WEBGL_debug_renderer_info",
-"WEBGL_debug_shaders",
-"WEBGL_depth_texture",
-"WEBGL_draw_buffers",
-"WEBGL_lose_context",
+"GL_WEBGL_compressed_texture_s3tc",
+"GL_WEBGL_debug_renderer_info",
+"GL_WEBGL_debug_shaders",
+"GL_WEBGL_depth_texture",
+"GL_WEBGL_draw_buffers",
+"GL_WEBGL_lose_context",
 /*
  * Khronos community approved.
  */
-"WEBGL_blend_func_extended",
-"WEBGL_clip_cull_distance",
-"WEBGL_color_buffer_float",
-"WEBGL_compressed_texture_astc",
-"WEBGL_compressed_texture_etc",
-"WEBGL_compressed_texture_etc1",
-"WEBGL_compressed_texture_pvrtc",
-"WEBGL_compressed_texture_s3tc_srgb",
-"WEBGL_multi_draw",
-"WEBGL_polygon_mode",
-"WEBGL_provoking_vertex",
-"WEBGL_render_shared_exponent",
-"WEBGL_stencil_texturing",
+"GL_WEBGL_blend_func_extended",
+"GL_WEBGL_clip_cull_distance",
+"GL_WEBGL_color_buffer_float",
+"GL_WEBGL_compressed_texture_astc",
+"GL_WEBGL_compressed_texture_etc",
+"GL_WEBGL_compressed_texture_etc1",
+"GL_WEBGL_compressed_texture_pvrtc",
+"GL_WEBGL_compressed_texture_s3tc_srgb",
+"GL_WEBGL_multi_draw",
+"GL_WEBGL_polygon_mode",
+"GL_WEBGL_provoking_vertex",
+"GL_WEBGL_render_shared_exponent",
+"GL_WEBGL_stencil_texturing",
 /*
  * Khronos draft.
  */
-"WEBGL_blend_equation_advanced_coherent",
-"WEBGL_draw_instanced_base_vertex_base_instance",
-"WEBGL_multi_draw_instanced_base_vertex_base_instance",
-"WEBGL_shader_pixel_local_storage",
+"GL_WEBGL_blend_equation_advanced_coherent",
+"GL_WEBGL_draw_instanced_base_vertex_base_instance",
+"GL_WEBGL_multi_draw_instanced_base_vertex_base_instance",
+"GL_WEBGL_shader_pixel_local_storage",
 /*
  * Khonos proposed.
  */
 "GL_EXT_texture_norm16_dom_source",
-"WEBGL_debug",
-"WEBGL_dynamic_texture",
-"WEBGL_video_texture",
-"WEBGL_webcodecs_video_frame",
+"GL_WEBGL_debug",
+"GL_WEBGL_dynamic_texture",
+"GL_WEBGL_video_texture",
+"GL_WEBGL_webcodecs_video_frame",
 /*
  * Khronos rejected.
  */
-"WEBGL_compress_texture",
-"WEBGL_compressed_texture_atc",
-"WEBGL_debug_shader_precision",
-"WEBGL_draw_elements_no_range_check",
-"WEBGL_get_buffer_sub_data_async",
-"WEBGL_security_sensitive_resources",
-"WEBGL_shared_resources",
-"WEBGL_subarray_uploads",
-"WEBGL_subscribe_uniform",
-"WEBGL_texture_from_depth_video",
-"WEBGL_texture_multisample",
-"WEBGL_texture_source_iframe",
+"GL_WEBGL_compress_texture",
+"GL_WEBGL_compressed_texture_atc",
+"GL_WEBGL_debug_shader_precision",
+"GL_WEBGL_draw_elements_no_range_check",
+"GL_WEBGL_get_buffer_sub_data_async",
+"GL_WEBGL_security_sensitive_resources",
+"GL_WEBGL_shared_resources",
+"GL_WEBGL_subarray_uploads",
+"GL_WEBGL_subscribe_uniform",
+"GL_WEBGL_texture_from_depth_video",
+"GL_WEBGL_texture_multisample",
+"GL_WEBGL_texture_source_iframe",
 /*
- * From the ANGLE source: requestable.
+ * From the ANGLE source, 2026-07-30: requestable.
  */
 "GL_ANGLE_base_vertex_base_instance",
 "GL_ANGLE_base_vertex_base_instance_shader_builtin",
@@ -99,7 +103,7 @@
 "GL_CHROMIUM_lose_context",
 "GL_NV_read_depth",
 /*
- * From the ANGLE source: ES only.
+ * From the ANGLE source, 2026-07-30: ES only.
  */
 "GL_ANGLE_client_arrays",
 "GL_ANGLE_explicit_context",
