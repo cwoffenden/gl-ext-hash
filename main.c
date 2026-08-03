@@ -7,10 +7,10 @@
 /**
  * \def MAX_ENTRIES
  * Maximum possible number of extensions (some sensible bound; as of mid-2026
- * Khronos has 1110, with approximately 95 others). Increase if \c extension
- * errors with \e excess \e elements when compiling.
+ * Khronos has 1110, with approximately 95 others, plus ANGLE EGL). Increase if
+ * \c extension errors with \e excess \e elements when compiling.
  */
-#define MAX_ENTRIES 1250
+#define MAX_ENTRIES 1300
 
 /**
  * Container type for calculated hashes.
@@ -77,7 +77,7 @@ static uint32_t hash32(const char* str, size_t const len) {
  * Standalone test of the embedded Khronos extension strings.
  *
  * \note In testing this needs at least 19 bits with the 1200 or so extensions
- * to not have clashes between prefixed and unprefixed versions (approx. 2160).
+ * to not have clashes between prefixed and unprefixed versions (approx. 2200).
  */
 int main() {
 	unsigned unprefed = 0;
