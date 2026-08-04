@@ -101,8 +101,9 @@ static uint32_t hash32(const char* str, size_t const len) {
 	((unsigned) str[3] << 24))
 
 /**
- * Removes the prefix from the known prefixes (<tt>GL_</tt>, the most common,
- * but also <tt>GLX_</tt>, <tt>EGL_</tt>, <tt>WGL_</tt> and <tt>GLU_</tt>).
+ * Removes the extension prefix if it contains one of the known prefixes
+ * (<tt>GL_</tt>, the most common, but also <tt>GLX_</tt>, <tt>EGL_</tt>,
+ * <tt>WGL_</tt> and <tt>GLU_</tt>).
  *
  * \note We do find duplicates once the prefix is removed, \c GL_ARB_multisample
  * has also a matching \c GLX_ARB_multisample and \c WGL_ARB_multisample for the
