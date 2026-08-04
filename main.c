@@ -110,7 +110,7 @@ static uint32_t hash32(const char* str, size_t const len) {
  *
  * \param[in] ext start of the extension name
  * \param[in] len number of characters
- * \return prefix length (should be \c 3 or \c 4 from the known prefixes)
+ * \return \a ext advanced by any found prefix (or untouched if not found)
  */
 const char* removePrefix(const char* const ext, size_t const len) {
 	if (len > 3) {
