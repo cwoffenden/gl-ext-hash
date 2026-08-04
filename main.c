@@ -112,7 +112,7 @@ static uint32_t hash32(const char* str, size_t const len) {
  * \param[in] len number of characters
  * \return \a ext advanced by any found prefix (or untouched if not found)
  */
-const char* removePrefix(const char* const ext, size_t const len) {
+const char* unprefix(const char* const ext, size_t const len) {
 	if (len > 3) {
 		unsigned calc = 0;
 		for (unsigned n = 0; n < 3; n++) {
@@ -178,7 +178,7 @@ int main() {
 					}
 				} else {
 					// Try again with the prefix removed
-					const char* extName = removePrefix(ext, len);
+					const char* extName = unprefix(ext, len);
 					if (ext != extName) {
 						hash = hash32(extName, len - (extName - ext));
 						found = find(hash);
@@ -187,7 +187,7 @@ int main() {
 						// Any duplicates?
 						if (found < MAX_ENTRIES) {
 							const char* clash = extension[found];
-							if (strcmp(extName, removePrefix(clash, strlen(clash))) == 0) {
+							if (strcmp(extName, unprefix(clash, strlen(clash))) == 0) {
 							#ifndef NDEBUG
 								// Ignore duplicate name-only extensions
 								printf("Ignoring prefixed duplicate '%s' "
