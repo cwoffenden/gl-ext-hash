@@ -113,7 +113,7 @@ static uint32_t hash32(const char* str, size_t const len) {
  * \param[in] len number of characters
  * \return \a ext advanced by any found prefix (or untouched if not found)
  */
-const char* unprefix(const char* const ext, size_t const len) {
+static const char* unprefix(const char* const ext, size_t const len) {
 	if (len > 3) {
 		unsigned calc = 0;
 		for (unsigned n = 0; n < 3; n++) {
