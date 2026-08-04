@@ -74,6 +74,73 @@ static uint32_t hash32(const char* str, size_t const len) {
 }
 
 /**
+ * \def PREFIX4_TO_INT
+ * Takes the first four characters in a string and uses each byte to form a
+ * little-endian 32-bit integer. The intended use is for GL prefixes, which
+ * range from three- to four-characters (\e plus the \c NULL terminator).
+ * Examples being:
+ * \code
+ *	"GL_"  0x005F4C47
+ *	"GL_X" 0x5F584C47
+ * \endcode
+ * \note Optimised release builds fold this to a single constant (with debug
+ * builds verifying the string length), then single compare instruction.
+ * \note This is preferred over a multi-character literal (which though has wide
+ * support, is big-endian, so needs extra shifts when building the comparison
+ * strings, and requires \c -Wno-error=multichar in modern compilers), or hacks
+ * like <tt>*((uint32_t*) "GL_\0")</tt> (machine-endian, and potentially
+ * unaligned).
+ *
+ * \param str 3-4 character string prefix
+ * \return a 32-bit unsigned integer composed from the characters
+ */
+#define PREFIX4_TO_INT(str) (assert(strlen(str) >= 3),\
+	((unsigned) str[0]      ) |\
+	((unsigned) str[1] <<  8) |\
+	((unsigned) str[2] << 16) |\
+	((unsigned) str[3] << 24))
+
+/**
+ * Removes the prefix from the known prefixes (<tt>GL_</tt>, the most common,
+ * but also <tt>GLX_</tt>, <tt>EGL_</tt>, <tt>WGL_</tt> and <tt>GLU_</tt>).
+ *
+ * \note We do find duplicates once the prefix is removed, \c GL_ARB_multisample
+ * has also a matching \c GLX_ARB_multisample and \c WGL_ARB_multisample for the
+ * same ARB extension (<tt>ARB_multisample</tt>, so the duplicates are correct).
+ *
+ * \param[in] ext start of the extension name
+ * \param[in] len number of characters
+ * \return prefix length (should be \c 3 or \c 4 from the known prefixes)
+ */
+const char* removePrefix(const char* const ext, size_t const len) {
+	if (len > 3) {
+		unsigned calc = 0;
+		for (unsigned n = 0; n < 3; n++) {
+			calc |= ext[n] << (n << 3);
+		}
+		if (calc == PREFIX4_TO_INT("GL_")) { // 1080
+			return ext + 3;
+		}
+		if (len > 4) {
+			calc |= ext[3] << 24;
+			if (calc == PREFIX4_TO_INT("GLX_") || // 68
+				calc == PREFIX4_TO_INT("EGL_") || // 68 (all in misc)
+				calc == PREFIX4_TO_INT("WGL_") || // 55
+				calc == PREFIX4_TO_INT("GLU_"))   //  4
+			{
+				return ext + 4;
+			}
+		}
+	}
+	/*
+	 * We know all the prefixes and this should never happen (unless new
+	 * extensions get introduced and this list not updated, or it's running in
+	 * production on WebGL with unprefixed extensions).
+	 */
+	return ext;
+}
+
+/**
  * Standalone test of the embedded Khronos extension strings.
  *
  * \note In testing this needs at least 19 bits with the 1200 or so extensions
@@ -97,26 +164,44 @@ int main() {
 				lookup[n] = hash;
 				// Any duplicates?
 				if (found < MAX_ENTRIES) {
-					if (strcmp(ext, extension[n]) == 0) {
+					const char* clash = extension[found];
+					if (strcmp(ext, clash) == 0) {
 					#ifndef NDEBUG
 						// Ignore real duplicate strings (probably ES)
-						printf("Ignoring duplicate '%s' (%d and %d)\n", ext, n, found);
+						printf("Ignoring duplicate '%s' "
+							"(%d and %d)\n", ext, n, found);
 					#endif
 					} else {
-						printf("Collision for '%s' at %d (with '%s' at %d)\n", ext, n, extension[n], found);
+						printf("Collision for '%s' at %d (with "
+							"'%s' at %d)\n", ext, n, clash, found);
 						return EXIT_FAILURE;
 					}
 				} else {
-					// Try the same but removing the GL_ prefix (but not others)
-					if (len > 3 && strncmp(ext, "GL_", 3) == 0) {
-						unprefed++;
-						hash = hash32(ext + 3, len - 3);
+					// Try again with the prefix removed
+					const char* extName = removePrefix(ext, len);
+					if (ext != extName) {
+						hash = hash32(extName, len - (extName - ext));
 						found = find(hash);
 						unpref[n] = hash;
+						unprefed++;
+						// Any duplicates?
 						if (found < MAX_ENTRIES) {
-							printf("Collision for '%s' at %d (with '%s' at %d)\n", ext + 3, n, extension[n], found);
-							return EXIT_FAILURE;
+							const char* clash = extension[found];
+							if (strcmp(extName, removePrefix(clash, strlen(clash))) == 0) {
+							#ifndef NDEBUG
+								// Ignore duplicate name-only extensions
+								printf("Ignoring prefixed duplicate '%s' "
+									"(%d and %d)\n", extName, n, found);
+							#endif
+							} else {
+								printf("Prefixed collision for '%s' at %d (with "
+									"'%s' at %d)\n", extName, n, clash, found);
+								return EXIT_FAILURE;
+							}
 						}
+					} else {
+						printf("Unknown prefix: '%s'\n", ext);
+						return EXIT_FAILURE;
 					}
 				}
 			} else {
