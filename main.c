@@ -49,10 +49,10 @@ typedef uint32_t HashLookup[MAX_ENTRIES];
  * All the Khronos extensions (with a \c NULL as the last used entry).
  */
 static const char* extension[MAX_ENTRIES] = {
-	#include "gl.inl"   // GL extensions
-	#include "arb.inl"  // ARB extensions
-	#include "es.inl"   // GL ES extensions
-	#include "misc.inl" // Anything else
+	#include "data/gl.inl"   // GL extensions
+	#include "data/arb.inl"  // ARB extensions
+	#include "data/es.inl"   // GL ES extensions
+	#include "data/misc.inl" // Anything else
 	NULL
 };
 
@@ -66,7 +66,7 @@ static HashLookup fullHash = {0};
  * Precalculated \c fullHash hashes.
  */
 static HashLookup precalcFull = {
-	#include "precalc-full.inl"
+	#include "data/precalc-full.inl"
 };
 
 /**
@@ -81,7 +81,7 @@ static HashLookup nameHash = {0};
  * Precalculated \c nameHash hashes.
  */
 static HashLookup precalcName = {
-	#include "precalc-name.inl"
+	#include "data/precalc-name.inl"
 };
 
 /**

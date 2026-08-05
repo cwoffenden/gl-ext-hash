@@ -79,7 +79,7 @@ if (hasLTO)
 	set(CMAKE_INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
 endif()
 
-file(GLOB INCS "*.h" "*.inl")
+file(GLOB INCS "*.h" "*.inl" "data/*.inl")
 file(GLOB SRCS "*.c" "*.cpp")
 
 source_group(TREE "${PROJECT_SOURCE_DIR}" PREFIX "Headers" FILES ${INCS})
