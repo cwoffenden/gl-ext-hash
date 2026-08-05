@@ -1,4 +1,5 @@
 #include <assert.h>
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -11,67 +12,6 @@
  * \c extension errors with \e excess \e elements when compiling.
  */
 #define MAX_ENTRIES 1300
-
-/**
- * Container type for calculated hashes.
- */
-typedef uint32_t HashLookup[MAX_ENTRIES];
-
-/**
- * All the Khronos extensions (with a \c NULL as the last used entry).
- */
-static const char* extension[MAX_ENTRIES] = {
-	#include "gl.inl"   // GL extensions
-	#include "arb.inl"  // ARB extensions
-	#include "es.inl"   // GL ES extensions
-	#include "misc.inl" // Anything else
-	NULL
-};
-
-/**
- * Hash calculated from the full extension string (including any prefix), with
- * indices matching <tt>extension</tt>.
- */
-static HashLookup lookup = {0};
-
-/**
- * Hash calculated from the extension with the \c GL_ prefix removed (any other
- * prefix, e.g.: <tt>GLX_</tt>, is not removed).
- *
- * \sa ::lookup
- */
-static HashLookup unpref = {0};
-
-/**
- * Searches both the extension and the un-prefixed extension hashes.
- *
- * \param[in] hash 32-bit hash to search for
- * \return either the matching index or \c MAX_ENTRIES if no match is found
- */
-static unsigned find(uint32_t const hash) {
-	assert(hash);
-	for (unsigned n = 0; n < MAX_ENTRIES; n++) {
-		if (lookup[n] == hash || unpref[n] == hash) {
-			return n;
-		}
-	}
-	return MAX_ENTRIES;
-}
-
-/**
- * Hash function adapted from Knuth's TAOCP.
- *
- * \param[in] str start of the data to hash
- * \param[in] len number of bytes
- * \return a 32-bit hash
- */
-static uint32_t hash32(const char* str, size_t const len) {
-	uint32_t hash = (uint32_t) len;
-	for (uint32_t n = hash; n > 0; n--) {
-		hash = ((hash << 5) ^ (hash >> 27)) ^ *str++;
-	}
-	return hash;
-}
 
 /**
  * \def PREFIX4_TO_INT
@@ -99,6 +39,81 @@ static uint32_t hash32(const char* str, size_t const len) {
 	((unsigned) str[1] <<  8) |\
 	((unsigned) str[2] << 16) |\
 	((unsigned) str[3] << 24))
+
+/**
+ * Container type for calculated hashes.
+ */
+typedef uint32_t HashLookup[MAX_ENTRIES];
+
+/**
+ * All the Khronos extensions (with a \c NULL as the last used entry).
+ */
+static const char* extension[MAX_ENTRIES] = {
+	#include "gl.inl"   // GL extensions
+	#include "arb.inl"  // ARB extensions
+	#include "es.inl"   // GL ES extensions
+	#include "misc.inl" // Anything else
+	NULL
+};
+
+/**
+ * Hash calculated from the full extension string (including any prefix), with
+ * indices matching <tt>extension</tt>.
+ */
+static HashLookup fullHash = {0};
+
+/**
+ * Precalculated \c fullHash hashes.
+ */
+static HashLookup precalcFull = {
+	#include "precalc-full.inl"
+};
+
+/**
+ * Hash calculated from the extension with the \c GL_ prefix removed (or any
+ * other prefix, e.g.: <tt>GLX_</tt>) leaving just the extension name.
+ *
+ * \sa fullHash
+ */
+static HashLookup nameHash = {0};
+
+/**
+ * Precalculated \c nameHash hashes.
+ */
+static HashLookup precalcName = {
+	#include "precalc-name.inl"
+};
+
+/**
+ * Searches both the extension and the un-prefixed name hashes.
+ *
+ * \param[in] hash 32-bit hash to search for
+ * \return either the matching index or \c MAX_ENTRIES if no match is found
+ */
+static unsigned find(uint32_t const hash) {
+	assert(hash);
+	for (unsigned n = 0; n < MAX_ENTRIES; n++) {
+		if (fullHash[n] == hash || nameHash[n] == hash) {
+			return n;
+		}
+	}
+	return MAX_ENTRIES;
+}
+
+/**
+ * Hash function adapted from Knuth's TAOCP.
+ *
+ * \param[in] str start of the data to hash
+ * \param[in] len number of bytes
+ * \return a 32-bit hash
+ */
+static uint32_t hash32(const char* str, size_t const len) {
+	uint32_t hash = (uint32_t) len;
+	for (uint32_t n = hash; n > 0; n--) {
+		hash = ((hash << 5) ^ (hash >> 27)) ^ *str++;
+	}
+	return hash;
+}
 
 /**
  * Removes the extension prefix if it contains one of the known prefixes
@@ -142,13 +157,37 @@ static const char* unprefix(const char* const ext, size_t const len) {
 }
 
 /**
+ * Helper to decide between either a space or a newline following an entry when
+ * dumping or printing hex data.
+ *
+ * \param[in] count running count of written entries
+ * \param[in] wrap after how many entries the line wraps (dictating space or newline)
+ * \return a single space or newline character
+ */
+static char spaceOrNewline(unsigned const count, unsigned const wrap) {
+	return (count > 0 && (count % wrap) == 0) ? '\n' : ' ';
+}
+
+/**
  * Standalone test of the embedded Khronos extension strings.
  *
  * \note In testing this needs at least 19 bits with the 1200 or so extensions
- * to not have clashes between prefixed and unprefixed versions (approx. 2200).
+ * to not have clashes between prefixed and unprefixed versions (approx. 2400).
  */
-int main() {
-	unsigned unprefed = 0;
+int main(int argc, char* argv[]) {
+	bool chatty = false;
+	bool tables = false;
+	for (int n = 1; n < argc; n++) {
+		if (strcmp("--chatty", argv[n]) == 0) {
+			chatty = true;
+		} else {
+			if (strcmp("--tables", argv[n]) == 0) {
+				tables = true;
+			}
+		}
+	}
+	unsigned foundFull = 0;
+	unsigned foundName = 0;
 	for (unsigned n = 0; n < MAX_ENTRIES; n++) {
 		const char* ext = extension[n];
 		if (ext != NULL) {
@@ -161,42 +200,43 @@ int main() {
 				}
 				// Hash the full extension name
 				uint32_t hash = hash32(ext, len);
-				unsigned found = find(hash);
-				lookup[n] = hash;
+				unsigned match = find(hash);
+				fullHash[n] = hash;
+				foundFull++;
 				// Any duplicates?
-				if (found < MAX_ENTRIES) {
-					const char* clash = extension[found];
+				if (match < MAX_ENTRIES) {
+					const char* clash = extension[match];
 					if (strcmp(ext, clash) == 0) {
-					#ifndef NDEBUG
-						// Ignore real duplicate strings (probably ES)
-						printf("Ignoring duplicate '%s' "
-							"(%d and %d)\n", ext, n, found);
-					#endif
+						if (chatty) {
+							// Ignore real duplicate strings (probably ES)
+							printf("Ignoring duplicate '%s' "
+								"(%d and %d)\n", ext, n, match);
+						}
 					} else {
 						printf("Collision for '%s' at %d (with "
-							"'%s' at %d)\n", ext, n, clash, found);
+							"'%s' at %d)\n", ext, n, clash, match);
 						return EXIT_FAILURE;
 					}
 				} else {
 					// Try again with the prefix removed
-					const char* extName = unprefix(ext, len);
-					if (ext != extName) {
-						hash = hash32(extName, len - (extName - ext));
-						found = find(hash);
-						unpref[n] = hash;
-						unprefed++;
+					const char* name = unprefix(ext, len);
+					if (ext != name) {
+						hash = hash32(name, len - (name - ext));
+						match = find(hash);
+						nameHash[n] = hash;
+						foundName++;
 						// Any duplicates?
-						if (found < MAX_ENTRIES) {
-							const char* clash = extension[found];
-							if (strcmp(extName, unprefix(clash, strlen(clash))) == 0) {
-							#ifndef NDEBUG
-								// Ignore duplicate name-only extensions
-								printf("Ignoring prefixed duplicate '%s' "
-									"(%d and %d)\n", extName, n, found);
-							#endif
+						if (match < MAX_ENTRIES) {
+							const char* clash = extension[match];
+							if (strcmp(name, unprefix(clash, strlen(clash))) == 0) {
+								if (chatty) {
+									// Ignore duplicate name-only extensions
+									printf("Ignoring prefixed duplicate '%s' "
+										"(%d and %d)\n", name, n, match);
+								}
 							} else {
 								printf("Prefixed collision for '%s' at %d (with "
-									"'%s' at %d)\n", extName, n, clash, found);
+									"'%s' at %d)\n", name, n, clash, match);
 								return EXIT_FAILURE;
 							}
 						}
@@ -210,11 +250,36 @@ int main() {
 				return EXIT_FAILURE;
 			}
 		} else {
-			printf("No collisions found!\n%d extensions tested, "
-				"%d unprefixed, a total of %d strings.\n",
-					n + 1, unprefed, n + 1 + unprefed);
 			break;
 		}
+	}
+	// All done!
+	printf("No collisions found!\n%d extensions tested, %d unprefixed, a total "
+		"of %d strings.\n", foundFull, foundName, foundFull + foundName);
+	// Optionally write out the results
+	if (tables) {
+		printf("// Full hashes\n");
+		for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
+			printf("0x%08X,%c", fullHash[n], spaceOrNewline(n + 1, 8));
+		}
+		printf("// Name hashes\n");
+		for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
+			printf("0x%08X,%c", nameHash[n], spaceOrNewline(n + 1, 8));
+		}
+		printf("\n");
+	} else {
+		// Or verify the known good hashes
+		for (unsigned n = 0; n < MAX_ENTRIES; n++) {
+			if (fullHash[n] != precalcFull[n]) {
+				printf("Precalculated full hash mismatch at %d ('%s') \n", n, extension[n]);
+				break;
+			}
+			if (nameHash[n] != precalcName[n]) {
+				printf("Precalculated name hash mismatch at %d ('%s') \n", n, extension[n]);
+				break;
+			}
+		}
+		printf("All precalculated hashes matched!\n");
 	}
 	return EXIT_SUCCESS;
 }
