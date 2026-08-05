@@ -262,6 +262,7 @@ int main(int argc, char* argv[]) {
 		for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
 			printf("0x%08X,%c", fullHash[n], spaceOrNewline(n + 1, 8));
 		}
+		printf("\n");
 		printf("// Name hashes\n");
 		for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
 			printf("0x%08X,%c", nameHash[n], spaceOrNewline(n + 1, 8));

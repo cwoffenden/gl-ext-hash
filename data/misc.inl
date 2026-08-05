@@ -25,6 +25,7 @@
 /*
  * Khronos community approved.
  */
+"GL_EXT_disjoint_timer_query_webgl2",
 "GL_WEBGL_blend_func_extended",
 "GL_WEBGL_clip_cull_distance",
 "GL_WEBGL_color_buffer_float",
