@@ -60,7 +60,7 @@ static const char* extension[MAX_ENTRIES] = {
  * Hash calculated from the full extension string (including any prefix), with
  * indices matching <tt>extension</tt>.
  */
-static HashLookup fullHash = {0};
+static HashLookup fullHash = {};
 
 /**
  * Precalculated \c fullHash hashes.
@@ -75,7 +75,7 @@ static HashLookup precalcFull = {
  *
  * \sa fullHash
  */
-static HashLookup nameHash = {0};
+static HashLookup nameHash = {};
 
 /**
  * Precalculated \c nameHash hashes.
@@ -83,6 +83,13 @@ static HashLookup nameHash = {0};
 static HashLookup precalcName = {
 	#include "data/precalc-name.inl"
 };
+
+/**
+ * Working container for the sorted hashes.
+ */
+static uint32_t sortedAll[MAX_ENTRIES * 2] = {};
+
+//********************************** Helpers **********************************/
 
 /**
  * Searches both the extension and the un-prefixed name hashes.
@@ -168,24 +175,17 @@ static char spaceOrNewline(unsigned const count, unsigned const wrap) {
 	return (count > 0 && (count % wrap) == 0) ? '\n' : ' ';
 }
 
+//*****************************************************************************/
+
 /**
- * Standalone test of the embedded Khronos extension strings.
+ * Performs the work of generating all the hashes (and filling the tables).
  *
- * \note In testing this needs at least 19 bits with the 1200 or so extensions
- * to not have clashes between prefixed and unprefixed versions (approx. 2400).
+ * \note This will halt and \c exit() on encountering an error.
+ *
+ * \param[in] chatty \c true to enable verbose debug output
+ * \return the total number of hashes generated
  */
-int main(int argc, char* argv[]) {
-	bool chatty = false;
-	bool tables = false;
-	for (int n = 1; n < argc; n++) {
-		if (strcmp("--chatty", argv[n]) == 0) {
-			chatty = true;
-		} else {
-			if (strcmp("--tables", argv[n]) == 0) {
-				tables = true;
-			}
-		}
-	}
+static unsigned generateHashes(bool const chatty) {
 	unsigned foundFull = 0;
 	unsigned foundName = 0;
 	for (unsigned n = 0; n < MAX_ENTRIES; n++) {
@@ -196,7 +196,7 @@ int main(int argc, char* argv[]) {
 				// Sanity test that the extension names were copied correctly
 				if (strcspn(ext, " \t") != len) {
 					printf("Leading or trailing space for '%s'\n", ext);
-					return EXIT_FAILURE;
+					exit(EXIT_FAILURE);
 				}
 				// Hash the full extension name
 				uint32_t hash = hash32(ext, len);
@@ -215,7 +215,7 @@ int main(int argc, char* argv[]) {
 					} else {
 						printf("Collision for '%s' at %d (with "
 							"'%s' at %d)\n", ext, n, clash, match);
-						return EXIT_FAILURE;
+						exit(EXIT_FAILURE);
 					}
 				} else {
 					// Try again with the prefix removed
@@ -237,17 +237,17 @@ int main(int argc, char* argv[]) {
 							} else {
 								printf("Prefixed collision for '%s' at %d (with "
 									"'%s' at %d)\n", name, n, clash, match);
-								return EXIT_FAILURE;
+								exit(EXIT_FAILURE);
 							}
 						}
 					} else {
 						printf("Unknown prefix: '%s'\n", ext);
-						return EXIT_FAILURE;
+						exit(EXIT_FAILURE);
 					}
 				}
 			} else {
 				printf("Empty string at index %d\n", n);
-				return EXIT_FAILURE;
+				exit(EXIT_FAILURE);
 			}
 		} else {
 			break;
@@ -256,31 +256,89 @@ int main(int argc, char* argv[]) {
 	// All done!
 	printf("No collisions found!\n%d extensions tested, %d unprefixed, a total "
 		"of %d strings.\n", foundFull, foundName, foundFull + foundName);
-	// Optionally write out the results
-	if (tables) {
-		printf("// Full hashes\n");
-		for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
-			printf("0x%08X,%c", fullHash[n], spaceOrNewline(n + 1, 8));
+	return foundFull + foundName;
+}
+
+/**
+ * After running \c generateHashes() this will verify against the known values.
+ *
+ * \note This will halt and \c exit() on encountering an error.
+ */
+static void verifyKnownHashes() {
+	for (unsigned n = 0; n < MAX_ENTRIES; n++) {
+		if (fullHash[n] != precalcFull[n]) {
+			printf("Precalculated full hash mismatch at %d ('%s') \n", n, extension[n]);
+			exit(EXIT_FAILURE);
 		}
-		printf("\n");
-		printf("// Name hashes\n");
-		for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
-			printf("0x%08X,%c", nameHash[n], spaceOrNewline(n + 1, 8));
+		if (nameHash[n] != precalcName[n]) {
+			printf("Precalculated name hash mismatch at %d ('%s') \n", n, extension[n]);
+			exit(EXIT_FAILURE);
 		}
-		printf("\n");
+	}
+	puts("All precalculated hashes matched!");
+}
+
+/**
+ * Performs the work of writing out both full and name-only hash tables.
+ *
+ * \note This will halt and \c exit() on encountering an error.
+ */
+static void printTables() {
+	puts("// Full hashes");
+	for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
+		if (fullHash[n] == 0) {
+			printf("Full hash missing at %d\n", n);
+			exit(EXIT_FAILURE);
+		}
+		printf("0x%08X,%c", fullHash[n], spaceOrNewline(n + 1, 8));
+	}
+	puts("");
+	puts("// Name hashes");
+	for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
+		printf("0x%08X,%c", nameHash[n], spaceOrNewline(n + 1, 8));
+	}
+	puts("");
+}
+
+/**
+ * Standalone test of the embedded Khronos extension strings.
+ *
+ * \note In testing this needs at least 19 bits with the 1200 or so extensions
+ * to not have clashes between prefixed and unprefixed versions (approx. 2400).
+ */
+int main(int argc, char* argv[]) {
+	bool chatty = false; // Debug output
+	bool tables = false; // Print the precalc tables (after Khronos updates)
+	bool sorted = false; // Print the sorted, unique runtime table
+	for (int n = 1; n < argc; n++) {
+		if (!strcmp("--chatty", argv[n]) || !strcmp("-c", argv[n])) {
+			chatty = true;
+		} else {
+			if (!strcmp("--tables", argv[n]) || !strcmp("-t", argv[n])) {
+				tables = true;
+			} else {
+				if (!strcmp("--sorted", argv[n]) || !strcmp("-s", argv[n])) {
+					sorted = true;
+				} else {
+					printf("Unknown option '%s', choices are:\n", argv[n]);
+					puts("\t--chatty enable debug output for the tests");
+					puts("\t--tables print the precalculated value tables");
+					puts("\t--sorted print the sorted, unique runtime table");
+					return EXIT_FAILURE;
+				}
+			}
+		}
+	}
+	generateHashes(chatty);
+	if (!tables) {
+		verifyKnownHashes();
 	} else {
-		// Or verify the known good hashes
-		for (unsigned n = 0; n < MAX_ENTRIES; n++) {
-			if (fullHash[n] != precalcFull[n]) {
-				printf("Precalculated full hash mismatch at %d ('%s') \n", n, extension[n]);
-				break;
-			}
-			if (nameHash[n] != precalcName[n]) {
-				printf("Precalculated name hash mismatch at %d ('%s') \n", n, extension[n]);
-				break;
-			}
+		printTables();
+	}
+	if (sorted) {
+		if (tables) {
+			puts("Printing sorted tables without verifying");
 		}
-		printf("All precalculated hashes matched!\n");
 	}
 	return EXIT_SUCCESS;
 }
