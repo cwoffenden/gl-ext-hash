@@ -49,6 +49,7 @@ else()
 		$<$<CONFIG:DEBUG>:-O0>
 		$<$<CONFIG:DEBUG>:-g3>
 		$<$<CONFIG:DEBUG>:-Wno-unused>
+		$<$<CONFIG:DEBUG>:-Wno-unused-parameter>
 		$<$<CONFIG:RELEASE>:-O3>
 		$<$<CONFIG:RELEASE>:-g0>
 		$<$<COMPILE_LANGUAGE:CXX>:-fno-exceptions>

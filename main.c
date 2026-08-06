@@ -87,7 +87,7 @@ static HashLookup precalcName = {
 /**
  * Working container for the sorted hashes.
  */
-static uint32_t sortedAll[MAX_ENTRIES * 2] = {};
+static uint32_t sortedHash[MAX_ENTRIES * 2] = {};
 
 //********************************** Helpers **********************************/
 
@@ -172,8 +172,21 @@ static const char* unprefix(const char* const ext, size_t const len) {
  * \return a single space or newline character
  */
 static char spaceOrNewline(unsigned const count, unsigned const wrap) {
-	return (count > 0 && (count % wrap) == 0) ? '\n' : ' ';
+	return (count > 0 && ((count + 1) % wrap) == 0) ? '\n' : ' ';
 }
+
+/**
+ * Comparison function for \c qsort and any other sort or search.
+ *
+ * \param[in] lhs pointer to a \c uint32_t
+ * \param[in] rhs pointer to a \c uint32_t
+ * \return an integer following the \c qsort comparator predicate rules for ascending order
+ */
+static int compareU32(const void* const lhs, const void* const rhs) {
+	uint32_t lhsVal = *((uint32_t*) lhs);
+	uint32_t rhsVal = *((uint32_t*) rhs);
+	return (lhsVal < rhsVal) ? -1 : ((lhsVal > rhsVal) ? 1 : 0);
+};
 
 //*****************************************************************************/
 
@@ -188,6 +201,7 @@ static char spaceOrNewline(unsigned const count, unsigned const wrap) {
 static unsigned generateHashes(bool const chatty) {
 	unsigned foundFull = 0;
 	unsigned foundName = 0;
+	unsigned validDups = 0;
 	for (unsigned n = 0; n < MAX_ENTRIES; n++) {
 		const char* ext = extension[n];
 		if (ext != NULL) {
@@ -201,15 +215,14 @@ static unsigned generateHashes(bool const chatty) {
 				// Hash the full extension name
 				uint32_t hash = hash32(ext, len);
 				unsigned match = find(hash);
-				fullHash[n] = hash;
-				foundFull++;
 				// Any duplicates?
 				if (match < MAX_ENTRIES) {
 					const char* clash = extension[match];
 					if (strcmp(ext, clash) == 0) {
+						validDups++;
 						if (chatty) {
 							// Ignore real duplicate strings (probably ES)
-							printf("Ignoring duplicate '%s' "
+							printf("Ignoring duplicate entry '%s' "
 								"(%d and %d)\n", ext, n, match);
 						}
 					} else {
@@ -218,27 +231,33 @@ static unsigned generateHashes(bool const chatty) {
 						exit(EXIT_FAILURE);
 					}
 				} else {
+					// Store the result (ignoring valid duplicates)
+					fullHash[n] = hash;
+					foundFull++;
 					// Try again with the prefix removed
 					const char* name = unprefix(ext, len);
 					if (ext != name) {
 						hash = hash32(name, len - (name - ext));
 						match = find(hash);
-						nameHash[n] = hash;
-						foundName++;
 						// Any duplicates?
 						if (match < MAX_ENTRIES) {
 							const char* clash = extension[match];
 							if (strcmp(name, unprefix(clash, strlen(clash))) == 0) {
+								validDups++;
 								if (chatty) {
 									// Ignore duplicate name-only extensions
-									printf("Ignoring prefixed duplicate '%s' "
-										"(%d and %d)\n", name, n, match);
+									printf("Ignoring duplicate name '%s' at %d "
+										"(with '%s' at %d)\n", ext, n, clash, match);
 								}
 							} else {
-								printf("Prefixed collision for '%s' at %d (with "
+								printf("Name collision for '%s' at %d (with "
 									"'%s' at %d)\n", name, n, clash, match);
 								exit(EXIT_FAILURE);
 							}
+						} else {
+							// Also store the result (ignoring valid duplicates)
+							nameHash[n] = hash;
+							foundName++;
 						}
 					} else {
 						printf("Unknown prefix: '%s'\n", ext);
@@ -254,8 +273,11 @@ static unsigned generateHashes(bool const chatty) {
 		}
 	}
 	// All done!
-	printf("No collisions found!\n%d extensions tested, %d unprefixed, a total "
-		"of %d strings.\n", foundFull, foundName, foundFull + foundName);
+	puts("No collisions found!");
+	printf("%d unique extensions, plus %d unique unprefixed (%d total)\n",
+		foundFull, foundName, foundFull + foundName);
+	printf("%d duplicates ignored (overall %d strings)\n",
+		validDups, foundFull + foundName + validDups);
 	return foundFull + foundName;
 }
 
@@ -279,32 +301,68 @@ static void verifyKnownHashes() {
 }
 
 /**
- * Performs the work of writing out both full and name-only hash tables.
- *
- * \note This will halt and \c exit() on encountering an error.
+ * Performs the work of writing out both full and name-only hash tables (with
+ * zeroes where duplicates are found).
  */
-static void printTables() {
-	puts("// Full hashes");
+static void printHashTables() {
+	printf("// Full hashes");
 	for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
-		if (fullHash[n] == 0) {
-			printf("Full hash missing at %d\n", n);
-			exit(EXIT_FAILURE);
-		}
-		printf("0x%08X,%c", fullHash[n], spaceOrNewline(n + 1, 8));
+		printf("0x%08X,%c", fullHash[n], spaceOrNewline(n, 8));
 	}
 	puts("");
 	puts("// Name hashes");
 	for (unsigned n = 0; n < MAX_ENTRIES && extension[n] != NULL; n++) {
-		printf("0x%08X,%c", nameHash[n], spaceOrNewline(n + 1, 8));
+		printf("0x%08X,%c", nameHash[n], spaceOrNewline(n, 8));
 	}
 	puts("");
+}
+
+/**
+ * Performs the work of both sorting the hashes and writing them out.
+ *
+ * \param[in] expected total number of expected unique hashes from \c generateHashes()
+ */
+static void printSortedHashes(unsigned const expected) {
+	// Put both hash lists into a single container
+	memcpy(sortedHash,               fullHash, MAX_ENTRIES * sizeof(uint32_t));
+	memcpy(sortedHash + MAX_ENTRIES, nameHash, MAX_ENTRIES * sizeof(uint32_t));
+	// Check for duplicates (generateHashes() should've not let any through)
+	for (unsigned n = 0; n < MAX_ENTRIES * 2; n++) {
+		uint32_t sortedN = sortedHash[n];
+		if (sortedN != 0) {
+			for (unsigned i = 0; i < MAX_ENTRIES * 2; i++) {
+				if (n != i) {
+					if (sortedN == sortedHash[i]) {
+						printf("Duplicate unique entries: 0x%08X\n", sortedN);
+						exit(EXIT_FAILURE);
+					}
+				}
+			}
+		}
+	}
+	// Sort into ascending order
+	qsort(sortedHash, MAX_ENTRIES * 2, sizeof(uint32_t), compareU32);
+	// Print the non-zero ones
+	puts("// Unique hashes");
+	unsigned count = 0;
+	for (unsigned n = 0; n < MAX_ENTRIES * 2; n++) {
+		if (sortedHash[n] != 0) {
+			printf("0x%08X,%c", sortedHash[n], spaceOrNewline(count++, 8));
+		}
+	}
+	puts("");
+	// Verify the count matches generateHashes()
+	if (count != expected) {
+		printf("Sorted entry mismatch: got %d, expected %d\n", count, expected);
+		exit(EXIT_FAILURE);
+	}
 }
 
 /**
  * Standalone test of the embedded Khronos extension strings.
  *
  * \note In testing this needs at least 19 bits with the 1200 or so extensions
- * to not have clashes between prefixed and unprefixed versions (approx. 2400).
+ * to not have clashes between prefixed and unprefixed versions (approx. 2300).
  */
 int main(int argc, char* argv[]) {
 	bool chatty = false; // Debug output
@@ -329,16 +387,17 @@ int main(int argc, char* argv[]) {
 			}
 		}
 	}
-	generateHashes(chatty);
+	unsigned total = generateHashes(chatty);
 	if (!tables) {
 		verifyKnownHashes();
 	} else {
-		printTables();
+		printHashTables();
 	}
 	if (sorted) {
 		if (tables) {
-			puts("Printing sorted tables without verifying");
+			puts("Note: unverified sorted hashes");
 		}
+		printSortedHashes(total);
 	}
 	return EXIT_SUCCESS;
 }
