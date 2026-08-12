@@ -43,7 +43,7 @@ if (MSVC)
 	set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:DEBUG>:DebugDLL>")
 else()
 	try_compile(HAS_PEDANTIC
-		SOURCE_FROM_CONTENT test.c "int main(void) {return 0;}"
+		SOURCE_FROM_CONTENT test.c "int main(void) {return 0;}\n"
 		CMAKE_FLAGS "-DCOMPILE_DEFINITIONS=-Werror -Wpedantic"
 	)
 	add_compile_options(
@@ -75,6 +75,11 @@ else()
 				endif()
 			endif()
 		endif()
+	endif()
+	if (EMSCRIPTEN)
+		# It's enough to use Emscripten's boilerplate for testing (and we can
+		# forgo the myriad of -S flags for something so simple)
+		set(CMAKE_EXECUTABLE_SUFFIX ".html")
 	endif()
 endif()
 
