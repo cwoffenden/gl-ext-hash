@@ -1,4 +1,4 @@
-# OpenGL Extension Hash Test
+# `GL_EXT-hash` OpenGL Extension Hash Test 
 
 Throwaway tool to hash all the known extensions and test for collisions.
 
